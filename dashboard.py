@@ -13,7 +13,7 @@ import os
 import sys
 import time
 
-st.set_page_config(page_title="Duplicate/Contradiction Detector", layout="wide")
+st.set_page_config(page_title="Autonomous-dev-agent", layout="wide")
 
 sys.path.insert(0, "workspace")
 
