@@ -237,7 +237,7 @@ def render_iteration_card(rec):
 
 
 def render_build_tab():
-    st.header("How It Was Built")
+    st.header("The Automation workflow")
     st.caption("Supervisor -> Task Agent -> Coding Agent -> Tests -> Supervisor")
 
     mode = st.radio("Mode", ["REPLAY", "LIVE (local only)"], horizontal=True)
@@ -282,7 +282,7 @@ def render_build_tab():
 
 def main():
     st.title("Duplicate / Contradiction Detector")
-    tab1, tab2 = st.tabs(["How It Was Built", "Analyze a Document"])
+    tab1, tab2 = st.tabs(["The Automation Workflow", "Sample Text"])
     with tab1:
         render_build_tab()
     with tab2:
