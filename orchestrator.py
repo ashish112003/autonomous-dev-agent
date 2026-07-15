@@ -1,8 +1,6 @@
 
 
 """
-orchestrator.py
-Persistent Planner (Groq) <-> Coding Agent (Aider) autonomous loop.
 
 The Planner is one continuous conversation (message history persists across
 the whole run). Each turn it sees the real task, the real code diff, and the
