@@ -1,25 +1,128 @@
 """
 dashboard.py
-Live Agent Dashboard — visualizes the Supervisor -> Task Agent -> Coding
-Agent -> Tests -> Supervisor loop by reading logs/run_001.jsonl.
-
-Two modes:
-- LIVE: auto-refreshes, shows the latest state (use while orchestrator.py
-  is running locally, on the same machine).
-- REPLAY: step through a saved run with a slider (works anywhere, including
-  the deployed Streamlit Cloud version, using a committed sample log).
+Two tabs:
+1. Analyze a Document — upload/paste text, watch live status, get real
+   duplicate/contradiction results (calls the actual detector.py + Groq).
+2. How It Was Built — replay of the autonomous build process
+   (Supervisor -> Task Agent -> Coding Agent -> Tests).
 """
 
 import streamlit as st
 import json
 import os
+import sys
 import time
 
-st.set_page_config(page_title="Autonomous Dev Agent — Live Dashboard", layout="wide")
+st.set_page_config(page_title="Duplicate/Contradiction Detector", layout="wide")
+
+sys.path.insert(0, "workspace")
 
 LOG_PATH = "logs/run_001.jsonl"
 
 
+# ---------- Shared: load API key from Streamlit secrets or .env ----------
+def get_api_key():
+    if "GROQ_API_KEY" in st.secrets:
+        return st.secrets["GROQ_API_KEY"]
+    return os.environ.get("GROQ_API_KEY")
+
+
+# ---------- TAB 1: Analyze a Document ----------
+def merge_pairs_into_groups(pairs):
+    parent = {}
+
+    def find(x):
+        parent.setdefault(x, x)
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    def union(a, b):
+        ra, rb = find(a), find(b)
+        if ra != rb:
+            parent[ra] = rb
+
+    for pair in pairs:
+        for item in pair:
+            find(item)
+        for i in range(1, len(pair)):
+            union(pair[0], pair[i])
+
+    groups = {}
+    for item in parent:
+        root = find(item)
+        groups.setdefault(root, set()).add(item)
+    return [sorted(g) for g in groups.values()]
+
+
+def render_analyze_tab():
+    st.header("Analyze a Document")
+    st.caption("Paste numbered bulleted statements, or upload a .txt file")
+
+    uploaded = st.file_uploader("Upload a .txt file", type=["txt"])
+    default_text = uploaded.read().decode("utf-8") if uploaded else ""
+    text = st.text_area("Or paste text directly:", value=default_text, height=250,
+                         placeholder="1. The rate for Material A shall be Rs. 50 per kg.\n2. ...")
+
+    if st.button("Analyze", type="primary", disabled=not text.strip()):
+        os.environ["GROQ_API_KEY"] = get_api_key() or ""
+
+        status_box = st.status("Starting analysis...", expanded=True)
+
+        status_box.write("Step 1/4: Parsing bullets...")
+        time.sleep(0.4)
+        try:
+            from detector import detect, parse_bullets
+        except ImportError as e:
+            status_box.update(label="Failed to load detector.py", state="error")
+            st.error(f"Could not import detector.py from workspace/: {e}")
+            return
+
+        bullets = parse_bullets(text)
+        status_box.write(f"Found {len(bullets)} bullets.")
+
+        status_box.write("Step 2/4: Sending to Groq API...")
+        time.sleep(0.3)
+
+        try:
+            result = detect(text)
+        except Exception as e:
+            status_box.update(label="Analysis failed", state="error")
+            st.error(f"detect() raised an exception: {e}")
+            return
+
+        status_box.write("Step 3/4: Parsing response...")
+        time.sleep(0.3)
+
+        status_box.write("Step 4/4: Done.")
+        status_box.update(label="Analysis complete", state="complete")
+
+        bullet_map = {b["id"]: b["text"] for b in bullets}
+        dup_groups = merge_pairs_into_groups(result.get("duplicates", []))
+        contra_groups = merge_pairs_into_groups(result.get("contradictions", []))
+
+        col1, col2 = st.columns(2)
+        with col1:
+            st.subheader(f"Duplicates ({len(dup_groups)})")
+            if not dup_groups:
+                st.write("None found.")
+            for group in dup_groups:
+                with st.container(border=True):
+                    for bid in group:
+                        st.write(f"**{bid}.** {bullet_map.get(bid, bullet_map.get(str(bid), '?'))}")
+
+        with col2:
+            st.subheader(f"Contradictions ({len(contra_groups)})")
+            if not contra_groups:
+                st.write("None found.")
+            for group in contra_groups:
+                with st.container(border=True):
+                    for bid in group:
+                        st.write(f"**{bid}.** {bullet_map.get(bid, bullet_map.get(str(bid), '?'))}")
+
+
+# ---------- TAB 2: How It Was Built (existing replay dashboard) ----------
 def load_events(path):
     events = []
     if not os.path.exists(path):
@@ -37,8 +140,6 @@ def load_events(path):
 
 
 def group_by_iteration(events):
-    """Merge supervisor_decision / task_agent_translation / aider_result
-    events for the same iteration into one record."""
     grouped = {}
     order = []
     final_status = None
@@ -75,12 +176,8 @@ NODE_STYLE = """
 
 
 def render_pipeline(active_stage, failed=False):
-    stages = [
-        ("SUPERVISOR", "supervisor_decision"),
-        ("TASK AGENT", "task_agent_translation"),
-        ("CODING AGENT", "aider_result"),
-        ("TESTS + REAL CHECK", "aider_result"),
-    ]
+    stages = [("SUPERVISOR", "supervisor_decision"), ("TASK AGENT", "task_agent_translation"),
+              ("CODING AGENT", "aider_result"), ("TESTS + REAL CHECK", "aider_result")]
     order = ["supervisor_decision", "task_agent_translation", "aider_result"]
     html = NODE_STYLE + '<div class="pipeline">'
     passed_active = False
@@ -107,7 +204,6 @@ def render_iteration_card(rec):
     aider = rec.get("aider_result", {})
 
     st.markdown(f"### Iteration {it}")
-
     cols = st.columns(3)
     with cols[0]:
         st.markdown("**Supervisor**")
@@ -127,15 +223,11 @@ def render_iteration_card(rec):
     real_check = aider.get("real_check", {})
     tcols = st.columns(2)
     with tcols[0]:
-        passed = test_result.get("passed")
-        icon = "PASS" if passed else "FAIL"
-        st.markdown(f"**Mocked Tests:** {icon}")
+        st.markdown(f"**Mocked Tests:** {'PASS' if test_result.get('passed') else 'FAIL'}")
         with st.expander("output"):
             st.code(test_result.get("output", "")[:1500], language=None)
     with tcols[1]:
-        passed = real_check.get("passed")
-        icon = "PASS" if passed else "FAIL"
-        st.markdown(f"**Real API Check:** {icon}")
+        st.markdown(f"**Real API Check:** {'PASS' if real_check.get('passed') else 'FAIL'}")
         with st.expander("output"):
             st.code(real_check.get("output", "")[:1500], language=None)
 
@@ -143,26 +235,23 @@ def render_iteration_card(rec):
     if diff:
         with st.expander("git diff"):
             st.code(diff[:2000], language="diff")
-
     st.divider()
 
 
-def main():
-    st.title("Autonomous Dev Agent — Live Dashboard")
+def render_build_tab():
+    st.header("How It Was Built")
     st.caption("Supervisor -> Task Agent -> Coding Agent -> Tests -> Supervisor")
 
-    mode = st.sidebar.radio("Mode", ["LIVE (local)", "REPLAY"])
-    log_path = st.sidebar.text_input("Log file path", LOG_PATH)
-
-    events = load_events(log_path)
+    mode = st.radio("Mode", ["REPLAY", "LIVE (local only)"], horizontal=True)
+    events = load_events(LOG_PATH)
     if not events:
-        st.warning(f"No log data found at `{log_path}`. Run orchestrator.py first.")
+        st.warning(f"No log data found at `{LOG_PATH}`.")
         return
 
     records, final_status = group_by_iteration(events)
 
     if mode == "REPLAY" and records:
-        idx = st.sidebar.slider("Iteration", 1, len(records), len(records))
+        idx = st.slider("Iteration", 1, len(records), len(records))
         visible = records[:idx]
     else:
         visible = records
@@ -184,15 +273,22 @@ def main():
         st.error(f"Run stopped: {final_status}")
 
     render_pipeline(active_stage or "supervisor_decision", failed=failed and not final_status)
-
-    st.metric("Iterations so far", len(records))
-
+    st.metric("Iterations", len(records))
     for rec in reversed(visible):
         render_iteration_card(rec)
 
-    if mode == "LIVE (local)":
+    if mode == "LIVE (local only)":
         time.sleep(3)
         st.rerun()
+
+
+def main():
+    st.title("Duplicate / Contradiction Detector")
+    tab1, tab2 = st.tabs(["Analyze a Document", "How It Was Built"])
+    with tab1:
+        render_analyze_tab()
+    with tab2:
+        render_build_tab()
 
 
 if __name__ == "__main__":
