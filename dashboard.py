@@ -13,7 +13,7 @@ import os
 import sys
 import time
 
-st.set_page_config(page_title="Autonomous-dev-agent", layout="wide")
+st.set_page_config(page_title="Duplicate/Contradiction detector", layout="wide")
 
 sys.path.insert(0, "workspace")
 
@@ -281,7 +281,7 @@ def render_build_tab():
 
 
 def main():
-    st.title("Duplicate / Contradiction Detector")
+    st.title("Autonomous-dev-agent")
     tab1, tab2 = st.tabs(["The Automation Workflow", "Sample Text"])
     with tab1:
         render_build_tab()
