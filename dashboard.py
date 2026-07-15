@@ -58,11 +58,9 @@ def merge_pairs_into_groups(pairs):
 
 def render_analyze_tab():
     st.header("Analyze a Document")
-    st.caption("Paste numbered bulleted statements, or upload a .txt file")
+    st.caption("Paste numbered bulleted statements")
 
-    uploaded = st.file_uploader("Upload a .txt file", type=["txt"])
-    default_text = uploaded.read().decode("utf-8") if uploaded else ""
-    text = st.text_area("Or paste text directly:", value=default_text, height=250,
+    text = st.text_area("Paste text:", height=250,
                          placeholder="1. The rate for Material A shall be Rs. 50 per kg.\n2. ...")
 
     if st.button("Analyze", type="primary", disabled=not text.strip()):
@@ -284,11 +282,11 @@ def render_build_tab():
 
 def main():
     st.title("Duplicate / Contradiction Detector")
-    tab1, tab2 = st.tabs(["Analyze a Document", "How It Was Built"])
+    tab1, tab2 = st.tabs(["How It Was Built", "Analyze a Document"])
     with tab1:
-        render_analyze_tab()
-    with tab2:
         render_build_tab()
+    with tab2:
+        render_analyze_tab()
 
 
 if __name__ == "__main__":
