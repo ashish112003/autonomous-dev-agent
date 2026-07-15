@@ -1,6 +1,2 @@
 streamlit>=1.35
 
-groq
-python-dotenv
-requests
-pytest
