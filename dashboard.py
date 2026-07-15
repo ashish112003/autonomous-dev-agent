@@ -13,7 +13,7 @@ import os
 import sys
 import time
 
-st.set_page_config(page_title="Duplicate/Contradiction detector", layout="wide")
+st.set_page_config(page_title="Duplicate/Contradiction Detector", layout="wide")
 
 sys.path.insert(0, "workspace")
 
@@ -25,6 +25,13 @@ def get_api_key():
     if "GROQ_API_KEY" in st.secrets:
         return st.secrets["GROQ_API_KEY"]
     return os.environ.get("GROQ_API_KEY")
+
+
+# Must set this BEFORE importing orchestrator, since orchestrator reads
+# GROQ_API_KEY from the environment at import time.
+_key = get_api_key()
+if _key:
+    os.environ["GROQ_API_KEY"] = _key
 
 
 # ---------- TAB 1: Analyze a Document ----------
@@ -236,11 +243,14 @@ def render_iteration_card(rec):
     st.divider()
 
 
-def render_build_tab():
-    st.header("The Automation workflow")
-    st.caption("Supervisor -> Task Agent -> Coding Agent -> Tests -> Supervisor")
 
-    mode = st.radio("Mode", ["REPLAY", "LIVE (local only)"], horizontal=True)
+def render_build_tab():
+    st.header("How It Was Built")
+    st.caption("Supervisor -> Task Agent -> Coding Agent -> Tests -> Supervisor")
+    render_replay_tab()
+
+
+def render_replay_tab():
     events = load_events(LOG_PATH)
     if not events:
         st.warning(f"No log data found at `{LOG_PATH}`.")
@@ -248,7 +258,7 @@ def render_build_tab():
 
     records, final_status = group_by_iteration(events)
 
-    if mode == "REPLAY" and records:
+    if records:
         idx = st.slider("Iteration", 1, len(records), len(records))
         visible = records[:idx]
     else:
@@ -275,14 +285,10 @@ def render_build_tab():
     for rec in reversed(visible):
         render_iteration_card(rec)
 
-    if mode == "LIVE (local only)":
-        time.sleep(3)
-        st.rerun()
-
 
 def main():
-    st.title("Autonomous-dev-agent")
-    tab1, tab2 = st.tabs(["The Automation Workflow", "Sample Text"])
+    st.title("Duplicate / Contradiction Detector")
+    tab1, tab2 = st.tabs(["How It Was Built", "Analyze a Document"])
     with tab1:
         render_build_tab()
     with tab2:
@@ -291,8 +297,6 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
 
 
 
