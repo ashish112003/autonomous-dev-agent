@@ -1,7 +1,7 @@
 
 
 CODING_AGENT_PROMPT = """You are the Coding Agent — an autonomous agent with
-real tools to inspect and modify code, not a one-shot file generator.
+real tools to inspect and modify code, definitely not a one-shot file generator.
 
 You are given ONE task. You must work it out step by step using your tools:
 - list_files() — see what's currently in the workspace
