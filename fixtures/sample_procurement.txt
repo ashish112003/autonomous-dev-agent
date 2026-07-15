@@ -1,0 +1,15 @@
+1. The rate for Material A shall be Rs. 50 per kg.
+2. Transportation charges will be borne by the vendor.
+3. The price of Material A is fixed at fifty rupees per kilogram.
+4. Payment terms: 30 days from the date of invoice.
+5. The rate for Material A shall be Rs. 80 per kg.
+6. Vendor must ensure chemistry composition as per Annexure I.
+7. Freight and transportation costs shall be paid by the supplier.
+8. Delivery timeline is 15 working days from PO date.
+9. Invoice payment shall be released within thirty days of invoicing.
+10. The chemistry composition of the material must conform to Annexure I specifications.
+11. Rate of Material A is Rs. 50/kg as per agreed terms.
+12. Delivery shall be completed within 25 working days of purchase order.
+13. Packaging shall be as per standard industry practice.
+14. Vendor shall bear all costs of transportation and freight.
+15. Payment shall be made within 45 days from invoice date.
