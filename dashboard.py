@@ -300,7 +300,6 @@
 
 
 
-
 """
 dashboard.py
 Two tabs:
@@ -527,36 +526,17 @@ def render_iteration_card(rec, fallback_aider=None):
         stdout = aider.get("aider_result", {}).get("stdout", "")
         st.code(stdout[:800] if stdout else "(no new code change this iteration)", language=None)
 
-    has_run_data = bool(aider)
-    source = aider if has_run_data else (fallback_aider or {})
-    is_carried_over = not has_run_data and bool(fallback_aider)
-
-    test_result = source.get("test_result", {})
-    real_check = source.get("real_check", {})
-
-    if is_carried_over:
-        st.caption(f"No new code/test run this iteration — showing the evidence "
-                   f"from iteration {source.get('iteration', '?')}, the last real "
-                   f"attempt, which is what justified this decision.")
-
-    tcols = st.columns(2)
-    with tcols[0]:
-        label = "PASS" if test_result.get("passed") else ("FAIL" if test_result else "N/A")
-        st.markdown(f"**Mocked Tests:** {label}")
-        if test_result:
-            with st.expander("output"):
-                st.code(test_result.get("output", "")[:1500], language=None)
-    with tcols[1]:
-        label = "PASS" if real_check.get("passed") else ("FAIL" if real_check else "N/A")
-        st.markdown(f"**Real API Check:** {label}")
-        if real_check:
-            with st.expander("output"):
-                st.code(real_check.get("output", "")[:1500], language=None)
+    source = aider if aider else (fallback_aider or {})
+    if not aider and fallback_aider:
+        st.caption(f"No new code change this iteration — showing the diff "
+                   f"from iteration {source.get('iteration', '?')}, the last real attempt.")
 
     diff = source.get("diff", "")
     if diff:
         with st.expander("git diff"):
             st.code(diff[:2000], language="diff")
+    else:
+        st.caption("(no code change in this iteration)")
     st.divider()
 
 
@@ -620,6 +600,5 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
 
