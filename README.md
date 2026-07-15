@@ -2,9 +2,9 @@
 
 # Autonomous Duplicate/Contradiction Detector
 
-An autonomous chat-to-code supervision system that builds and verifies its own deliverable: a tool that reads numbered bulleted statements (e.g. from a procurement document) and identifies **duplicates** (same meaning, different wording) and **contradictions** (same subject, conflicting values) — with zero manual code editing.
+An autonomous chat-to-code supervision system that builds and verifies its own deliverable: a tool that reads numbered bulleted statements (e.g. from a procurement document) and identifies **duplicates** (same meaning, different wording) and **contradictions** (same subject, conflicting values) - with zero manual code editing.
 
-A persistent **Supervisor** ("Chat") observes real evidence from a **Coding Agent** ("Code") after every attempt and decides whether to fix, continue, or finish — the exact loop a human normally runs by hand, fully automated.
+A persistent **Supervisor** ("Chat") observes real evidence from a **Coding Agent** ("Code") after every attempt and decides whether to fix, continue, or finish - the exact loop a human normally runs by hand, fully automated.
 
 
 
