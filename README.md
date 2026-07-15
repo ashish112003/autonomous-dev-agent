@@ -1,6 +1,6 @@
 
 
-# Autonomous Document Comparison
+# Automatic Document Comparison
 
 An autonomous chat-to-code supervision system that builds and verifies its own deliverable: a tool that reads numbered bulleted statements (e.g. from a procurement document) and identifies **duplicates** (same meaning, different wording) and **contradictions** (same subject, conflicting values) - with zero manual code editing.
 
